@@ -1,6 +1,6 @@
 import type { OperationalPoint } from '@osrd-project/ui-spacetimechart/dist/lib/types';
 
-import { BASE_KM_HEIGHT, BASE_OP_HEIGHT } from './consts';
+import { BASE_OP_HEIGHT, FOOTER_HEIGHT, OP_LINE_HEIGHT } from './consts';
 import type { OperationalPointType, StyledOperationalPointType } from '../types';
 
 export const positionMmToKm = (position: number) => Math.round((position / 1000000) * 10) / 10;
@@ -55,10 +55,17 @@ export const calcOperationalPointsToDisplay = (
 
 export const operationalPointsHeight = (
   operationalPoints: StyledOperationalPointType[],
+  height: number,
   zoom: number,
   isProportional: boolean
-) =>
-  operationalPoints.map((op, index) => {
+) => {
+  if (operationalPoints.length < 2) return [];
+  const from = operationalPoints[0].position;
+  const to = operationalPoints[operationalPoints.length - 1].position;
+  const totalDistance = to - from;
+  const heightWithoutFinalOp = height - FOOTER_HEIGHT - BASE_OP_HEIGHT;
+
+  return operationalPoints.map((op, index) => {
     const nextOp = operationalPoints[index + 1];
     if (!nextOp) {
       return { ...op, styles: { height: `${BASE_OP_HEIGHT}px` } };
@@ -66,12 +73,15 @@ export const operationalPointsHeight = (
     if (isProportional) {
       return {
         ...op,
-        styles: { height: `${positionMmToKm(nextOp.position - op.position) * zoom * 8}px` },
+        styles: {
+          height: `${((nextOp.position - op.position) / totalDistance) * heightWithoutFinalOp * zoom}px`,
+        },
       };
     } else {
       return { ...op, styles: { height: `${BASE_OP_HEIGHT * zoom}px` } };
     }
   });
+};
 
 export const getOperationalPointsWithPosition = (
   operationalPoints: StyledOperationalPointType[]
@@ -83,13 +93,28 @@ export const getOperationalPointsWithPosition = (
     importanceLevel: 1,
   }));
 
-export const getScales = (ops: OperationalPoint[], isProportional: boolean, zoomY: number) => {
-  const scales = ops.slice(0, -1).map((point, i) => ({
-    from: point.position,
-    to: ops[i + 1].position,
-    ...(!isProportional
-      ? { size: BASE_OP_HEIGHT * zoomY }
-      : { coefficient: ((1000 / BASE_KM_HEIGHT) * 1000) / zoomY }),
-  }));
-  return scales;
+export const getScales = (
+  ops: OperationalPoint[],
+  height: number,
+  isProportional: boolean,
+  zoomY: number
+) => {
+  if (ops.length < 2) return [];
+  const from = ops[0].position;
+  const to = ops[ops.length - 1].position;
+
+  const totalDistance = to - from;
+  const heightWithoutFinalOp = height - FOOTER_HEIGHT - OP_LINE_HEIGHT / 2;
+
+  const scaleCoeff = isProportional
+    ? { coefficient: totalDistance / heightWithoutFinalOp / zoomY }
+    : { size: BASE_OP_HEIGHT * zoomY };
+
+  return [
+    {
+      from,
+      to,
+      ...scaleCoeff,
+    },
+  ];
 };
