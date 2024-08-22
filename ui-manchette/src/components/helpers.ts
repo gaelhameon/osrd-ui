@@ -1,9 +1,15 @@
 import type { OperationalPoint } from '@osrd-project/ui-spacetimechart/dist/lib/types';
 
-import { BASE_KM_HEIGHT, BASE_OP_HEIGHT } from './consts';
-import type { OperationalPointType, StyledOperationalPointType } from '../types';
+import { BASE_KM_HEIGHT, BASE_OP_HEIGHT, MAX_TIME_WINDOW } from './consts';
+import type {
+  OperationalPointType,
+  ProjectPathTrainResult,
+  StyledOperationalPointType,
+} from '../types';
 
 export const positionMmToKm = (position: number) => Math.round((position / 1000000) * 10) / 10;
+
+export const msToS = (time: number) => time / 1000;
 
 export const calcOperationalPointsToDisplay = (
   operationalPoints: OperationalPointType[],
@@ -72,6 +78,29 @@ export const operationalPointsHeight = (
       return { ...op, styles: { height: `${BASE_OP_HEIGHT * zoom}px` } };
     }
   });
+
+export const computeTimeWindow = (trains: ProjectPathTrainResult[]) => {
+  const { minTime, maxTime } = trains.reduce(
+    (times, train) => {
+      if (train.space_time_curves.length === 0) return times;
+
+      const lastCurve = train.space_time_curves[train.space_time_curves.length - 1];
+      if (lastCurve.times.length === 0) return times;
+
+      const firstPoint = +new Date(train.departure_time);
+      const lastPoint =
+        +new Date(train.departure_time) + lastCurve.times[lastCurve.times.length - 1];
+      return {
+        minTime: times.minTime === -1 || times.minTime > firstPoint ? firstPoint : times.minTime,
+        maxTime: times.maxTime === -1 || times.maxTime < lastPoint ? lastPoint : times.maxTime,
+      };
+    },
+    { minTime: -1, maxTime: -1 }
+  );
+
+  const timeWindow = msToS(maxTime - minTime);
+  return timeWindow > MAX_TIME_WINDOW ? MAX_TIME_WINDOW : timeWindow;
+};
 
 export const getOperationalPointsWithPosition = (
   operationalPoints: StyledOperationalPointType[]

@@ -10,3 +10,5 @@ export const ZOOM_X_DELTA = 0.5;
 export const MIN_ZOOM_Y = 1;
 export const MAX_ZOOM_Y = 10.5;
 export const ZOOM_Y_DELTA = 0.5;
+
+export const MAX_TIME_WINDOW = 60 * 60 * 12; // 12 hours

@@ -1,4 +1,4 @@
-import React, { type FC, useCallback, useEffect, useRef, useState } from 'react';
+import React, { type FC, useCallback, useEffect, useRef, useState, useMemo } from 'react';
 
 import { ZoomIn, ZoomOut } from '@osrd-project/ui-icons';
 import { SpaceTimeChart, PathLayer } from '@osrd-project/ui-spacetimechart';
@@ -14,6 +14,7 @@ import {
 } from './consts';
 import {
   calcOperationalPointsToDisplay,
+  computeTimeWindow,
   getOperationalPointsWithPosition,
   getScales,
   operationalPointsHeight,
@@ -80,6 +81,11 @@ const Manchette: FC<ManchetteProps> = ({
   } = state;
 
   const paths = usePaths(projectPathTrainResult, selectedProjection);
+
+  const timeWindow = useMemo(
+    () => computeTimeWindow(projectPathTrainResult),
+    [projectPathTrainResult]
+  );
 
   const zoomYIn = useCallback(() => {
     if (yZoom < MAX_ZOOM_Y) setState((prev) => ({ ...prev, yZoom: yZoom + ZOOM_Y_DELTA }));
@@ -196,7 +202,7 @@ const Manchette: FC<ManchetteProps> = ({
               timeOrigin={Math.min(
                 ...projectPathTrainResult.map((p) => +new Date(p.departure_time))
               )}
-              timeScale={60000 / xZoom}
+              timeScale={timeWindow / xZoom}
               xOffset={xOffset}
               yOffset={-scrollPosition + 14}
               onPan={({ initialPosition, position, isPanning }) => {
