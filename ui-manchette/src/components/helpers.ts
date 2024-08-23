@@ -1,6 +1,9 @@
-import type { OperationalPoint } from '@osrd-project/ui-spacetimechart/dist/lib/types';
+import type {
+  OperationalPoint,
+  SpaceTimeChartProps,
+} from '@osrd-project/ui-spacetimechart/dist/lib/types';
 
-import { BASE_KM_HEIGHT, BASE_OP_HEIGHT, MAX_TIME_WINDOW } from './consts';
+import { BASE_KM_HEIGHT, BASE_OP_HEIGHT, MAX_TIME_WINDOW, MAX_ZOOM_X, MIN_ZOOM_X } from './consts';
 import type {
   OperationalPointType,
   ProjectPathTrainResult,
@@ -121,4 +124,19 @@ export const getScales = (ops: OperationalPoint[], isProportional: boolean, zoom
       : { coefficient: ((1000 / BASE_KM_HEIGHT) * 1000) / zoomY }),
   }));
   return scales;
+};
+
+/** Zoom on X axis and center on the mouse position */
+export const zoomX = (
+  currentXZoom: number,
+  currentXOffset: number,
+  { delta, position: { x } }: Parameters<NonNullable<SpaceTimeChartProps['onZoom']>>[0]
+) => {
+  const xZoom = Math.min(Math.max(currentXZoom * (1 + delta / 10), MIN_ZOOM_X), MAX_ZOOM_X);
+  return {
+    xZoom,
+    // Adjust zoom level relatively to the input delta value:
+    // These lines are here to center the zoom on the mouse position:
+    xOffset: x - ((x - currentXOffset) / currentXZoom) * xZoom,
+  };
 };

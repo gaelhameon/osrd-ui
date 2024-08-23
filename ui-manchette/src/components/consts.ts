@@ -4,7 +4,7 @@ export const INITIAL_OP_LIST_HEIGHT = 521;
 export const INITIAL_SPACE_TIME_CHART_HEIGHT = INITIAL_OP_LIST_HEIGHT + 40;
 
 export const MIN_ZOOM_X = 1;
-export const MAX_ZOOM_X = 1;
+export const MAX_ZOOM_X = 10;
 export const ZOOM_X_DELTA = 0.5;
 
 export const MIN_ZOOM_Y = 1;

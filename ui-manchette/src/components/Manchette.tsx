@@ -18,6 +18,7 @@ import {
   getOperationalPointsWithPosition,
   getScales,
   operationalPointsHeight,
+  zoomX,
 } from './helpers';
 import OperationalPointList from './OperationalPointList';
 import { useIsOverflow } from '../hooks/useIsOverFlow';
@@ -40,6 +41,8 @@ const Manchette: FC<ManchetteProps> = ({
   selectedProjection,
 }) => {
   const manchette = useRef<HTMLDivElement>(null);
+
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
 
   const [state, setState] = useState<{
     xZoom: number;
@@ -94,11 +97,21 @@ const Manchette: FC<ManchetteProps> = ({
     if (yZoom > MIN_ZOOM_Y) setState((prev) => ({ ...prev, yZoom: yZoom - ZOOM_Y_DELTA }));
   }, [yZoom]);
   const handleScroll = useCallback(() => {
-    if (manchette.current) {
+    if (!isShiftPressed && manchette.current) {
       const { scrollTop } = manchette.current;
       if (scrollTop || scrollTop === 0) {
         setState((prev) => ({ ...prev, scrollPosition: scrollTop, yOffset: scrollTop }));
       }
+    }
+  }, [isShiftPressed]);
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Shift') {
+      setIsShiftPressed(true);
+    }
+  }, []);
+  const handleKeyUp = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Shift') {
+      setIsShiftPressed(false);
     }
   }, []);
   const toggleMode = useCallback(() => {
@@ -112,11 +125,15 @@ const Manchette: FC<ManchetteProps> = ({
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleScroll]);
+  }, [handleScroll, handleKeyDown, handleKeyUp]);
 
   useEffect(() => {
     const computedOperationalPoints = calcOperationalPointsToDisplay(
@@ -234,6 +251,14 @@ const Manchette: FC<ManchetteProps> = ({
                 }
 
                 setState(newState);
+              }}
+              onZoom={(payload) => {
+                if (isShiftPressed) {
+                  setState((prev) => ({
+                    ...prev,
+                    ...zoomX(state.xZoom, state.xOffset, payload),
+                  }));
+                }
               }}
             >
               {paths.map((path, i) => (
